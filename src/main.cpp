@@ -3,9 +3,18 @@
 
 NeuralNetwork *nn;
 
+// Pinos do display de 7 segmentos (a, b, c, d, e, f, g)
+const int segmentPins[7] = {};
+
 void setup() {
     Serial.begin(115200);
     while (!Serial) ;  // Espera porta serial abrir (opcional, para placas USB nativas)
+
+    // Inicializa os pinos do display
+    for (int i = 0; i < 7; i++) {
+        pinMode(segmentPins[i], OUTPUT);
+        digitalWrite(segmentPins[i], HIGH); // Apaga o segmento (comum anodo)
+    }
     
     Serial.println("Inicializando modelo...");
     nn = new NeuralNetwork();
@@ -29,14 +38,16 @@ void loop() {
 
         Serial.print(" | Saída: ");
         for (int i = 0; i < 7; i++) {
+            bool ligado = output[i] > 0.5;
+            digitalWrite(segmentPins[i], ligado ? LOW : HIGH);  // LOW acende (anodo comum)
             Serial.print((output[i] > 0.5f) ? "1" : "0");
             Serial.print(" ");
         }
 
+        
         Serial.println();
         delay(1000);
     }
 
     while (true);  // trava após rodar 0-15
 }
-
