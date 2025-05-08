@@ -3,44 +3,40 @@
 
 NeuralNetwork *nn;
 
-//  https://colab.research.google.com/drive/1azBPAoixkGswvUJpyAvLYKBaNBN1kBII?usp=sharing
-
-
-bool estados[4] = {false, false, false, false};
-bool ultimosEstados[4] = {true, true, true, true}; 
-int pinos[4] = {2, 3, 4, 5};
-
-void setup(){
+void setup() {
     Serial.begin(115200);
+    while (!Serial) ;  // Espera porta serial abrir (opcional, para placas USB nativas)
+    
     Serial.println("Inicializando modelo...");
     nn = new NeuralNetwork();
     Serial.println("Modelo inicializado!");
 }
 
-void loop(){
-  for (int i = 0; i < 4; i++) {
-    bool leitura = digitalRead(pinos[i]);
-    if (ultimosEstados[i] == HIGH && leitura == LOW) {
-      estados[i] = !estados[i];
+void loop() {
+    for (int valor = 0; valor < 16; valor++) {
+        // Define entrada de 4 bits (MSB primeiro)
+        for (int i = 0; i < 4; i++) {
+            nn->getInputBuffer()[i] = (valor & (1 << (3 - i))) ? 1.0f : 0.0f;
+        }
+
+        nn->predict();
+        float *output = nn->getOutpuBuffer();  // corrigido aqui
+
+        Serial.print("Entrada: ");
+        for (int i = 3; i >= 0; i--) {
+            Serial.print((valor >> i) & 1);
+        }
+
+        Serial.print(" | Saída: ");
+        for (int i = 0; i < 7; i++) {
+            Serial.print((output[i] > 0.5f) ? "1" : "0");
+            Serial.print(" ");
+        }
+
+        Serial.println();
+        delay(1000);
     }
-    ultimosEstados[i] = leitura;
 
-    nn->getInputBuffer()[i] = estados[i] ? 1.0f : 0.0f;
-  }
-
-  // Faz a previsão
-  nn->predict();
-
-  // Lê as saídas
-  float *output = nn->getOutpuBuffer();
-
-  Serial.print("Saída: ");
-  for (int i = 0; i < 7; i++) {
-    Serial.print(output[i] > 0.5 ? "1" : "0"); 
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  delay(100);
+    while (true);  // trava após rodar 0-15
 }
 
